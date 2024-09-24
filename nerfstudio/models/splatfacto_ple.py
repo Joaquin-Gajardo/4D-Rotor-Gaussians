@@ -277,7 +277,8 @@ class Splatfacto_pleModel(Model):
             xyz = torch.nn.Parameter(self.seed_points[0])  # (Location, Color)
             t =  torch.nn.Parameter(torch.rand_like(xyz[:, :1]))
         else:
-            ply_path = os.path.join(self.config.path, "points3d.ply")
+            #ply_path = os.path.join(self.config.path, "points3d.ply")
+            ply_path = os.path.join(self.config.path, "sparse/0/points3D.ply")
             pcd = fetch_ply(ply_path)
             xyz = torch.nn.Parameter(torch.tensor(pcd.points)).repeat(1, 1)
             fused_color =  RGB2SH(torch.tensor(np.asarray(pcd.colors/255)).float().cuda())

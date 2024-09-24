@@ -77,6 +77,10 @@ class InputDataset(Dataset):
                 depth = cv2.resize(depth, (pil_image.size[0], pil_image.size[1]), cv2.INTER_NEAREST)
                 depth = torch.Tensor(depth).reshape(pil_image.size[0], pil_image.size[1])
             return [image,depth]
+        
+        if image_filename.stem[-4:].lower() == '.png': # get rid of double extension
+            image_filename = image_filename.parent / image_filename.stem
+            
         pil_image = Image.open(image_filename)
         if self.scale_factor != 1.0:
             width, height = pil_image.size

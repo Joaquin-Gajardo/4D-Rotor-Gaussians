@@ -56,7 +56,7 @@ class Plenoptic(DataParser):
     config: PlenDataParserConfig
     includes_time: bool = True
     
-    def __init__(self, config: PlenDataParserConfi):
+    def __init__(self, config: PlenDataParserConfig):
         super().__init__(config=config)
         self.data: Path = config.data
         self.scale_factor: float = config.scale_factor
@@ -86,8 +86,9 @@ class Plenoptic(DataParser):
         poses = np.array(poses).astype(np.float32)
         times = torch.tensor(times, dtype=torch.float32)
         
-        image_height, image_width = 1014,1352
-        
+        #image_height, image_width = 1014,1352
+        image_height, image_width = meta['h'], meta['w']
+
         focal_length_x = float(meta["fl_x"])
         focal_length_y = float(meta["fl_y"])
         cx = image_width / 2.0
