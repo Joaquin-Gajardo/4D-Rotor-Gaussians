@@ -135,7 +135,8 @@ def colmap_to_json(
         frames.append(frame)
 
     if set(cam_id_to_camera.keys()) != {1}:
-        raise RuntimeError("Only single camera shared for all images is supported.")
+        print("Warning: Only single camera shared for all images is supported. Choosing the first one")
+        print(cam_id_to_camera)
     
     out = parse_colmap_camera_params(cam_id_to_camera[1])
 
@@ -178,33 +179,32 @@ def colmap_to_json(
         with open(test_json, "w", encoding="utf-8") as f:
             json.dump(test_out, f, indent=4)
 
-    # # create ply from colmap
-    # assert ply_filename.endswith(".ply"), f"ply_filename: {ply_filename} does not end with '.ply'"
-    # create_ply_from_colmap(
-    #     ply_filename,
-    #     recon_dir,
-    #     output_dir,
-    #     torch.from_numpy(applied_transform).float() if applied_transform is not None else None,
-    # )
-    # out["ply_file_path"] = ply_filename
-
     return len(frames)
 
 def main():
 
-    input_dir = Path("data/WAT/breville/images")
-    output_dir = Path("data/WAT/breville/images_downsampled")
-    scale_factor = 0.5
+    scale_factor = 1.0
+    input_images_dir = 'images'
+    output_images_dir = 'images'
+    dataset_path = Path("data/WAT")
     
-    print("Downsampling images...")
-    downsample_images(input_dir, output_dir, scale_factor=scale_factor)
+    for subfolder in sorted(dataset_path.iterdir()):
+        if subfolder.is_dir():
+            input_dir = subfolder / input_images_dir
+            output_dir = subfolder / output_images_dir
+            if scale_factor != 1.0:
+                print("Downsampling images...")
+                downsample_images(input_dir, output_dir, scale_factor=scale_factor)
 
-    print("Creating JSON file from COLMAP reconstruction...")
-    colmap_to_json(
-        base_dir = input_dir.parent,
-        image_dir = output_dir.name,
-        scale_factor = scale_factor,
-    )
+            if not (subfolder / "transforms_train.json").exists() or not (subfolder / "transforms_test.json").exists():
+                print(f"Creating JSON files for scene {subfolder}...")
+                colmap_to_json(
+                    base_dir = subfolder,
+                    image_dir = output_images_dir,
+                    scale_factor = scale_factor,
+                )
+            else:
+                print(f"JSON files already exist for scene {subfolder}")
 
 if __name__ == "__main__":
 

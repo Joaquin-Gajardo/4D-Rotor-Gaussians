@@ -73,7 +73,11 @@ class DNeRF(DataParser):
         poses = []
         times = []
         for frame in meta["frames"]:  
-            fname = self.data / Path(frame["file_path"].replace("./", "") + ".png")
+            if Path(frame['file_path']).name[-4:].lower() == '.png':
+                fname = self.data / Path(frame["file_path"])
+            else:    
+                fname = self.data / Path(frame["file_path"].replace("./", "") + ".png")
+
             image_filenames.append(fname)
             poses.append(np.array(frame["transform_matrix"]))
             times.append(frame["time"])

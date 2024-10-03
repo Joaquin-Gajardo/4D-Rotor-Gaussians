@@ -1,11 +1,14 @@
 import cv2
 import os
+from pathlib import Path
+import json
 import argparse
 import torch
 import torch.nn.functional as F
 import numpy as np
 import lpips
 import math
+import pandas as pd
 
 img2mse = lambda x, y: torch.mean((x - y) ** 2)
 mse2psnr = lambda x: -10. * torch.log(x) / torch.log(torch.Tensor([10.]).cuda())
@@ -62,9 +65,9 @@ def compute_lpips(img1, img2):
 
     return loss_fn(img1, img2)
 
-def calculate_metrics(path):
-    gtpath=os.path.join(path,'gt-rgb')
-    renderpath=os.path.join(path,'rgb')
+def calculate_metrics(gtpath, renderpath):
+    #gtpath=os.path.join(path,'gt-rgb')
+    #renderpath=os.path.join(path,'rgb')
     images_gt=os.listdir(gtpath)
     images_render=os.listdir(renderpath)
     total_psnr = 0.0
@@ -89,11 +92,36 @@ def calculate_metrics(path):
     avg_ssim = total_ssim / num_images
     avg_lpips_vgg = total_lpips_vgg / num_images
     print(f"Average PSNR: {avg_psnr.item()}, SSIM: {avg_ssim.item()}, LPIPS-VGG: {avg_lpips_vgg.item()}")
-    return avg_psnr
+    return {
+        'Timestep': gtpath.split('/')[-1],
+        'PSNR': avg_psnr.item(),
+        'SSIM': avg_ssim.item(),
+        'LPIPS-VGG': avg_lpips_vgg.item()
+    }
 
+def calculate_metrics_all_timesteps(path):
+    gt_path = os.path.join(path,'gt-rgb')
+    render_path = os.path.join(path,'rgb')
+    rows = []
+    for timestep in os.listdir(gt_path):
+        timestep_path_gt = os.path.join(gt_path, timestep)
+        timestep_path_render = timestep_path_gt.replace('gt-rgb', 'rgb')
+        
+        results = calculate_metrics(timestep_path_gt, timestep_path_render)
+        rows.append(results)
+    return pd.DataFrame(rows)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("path", default="", help="input path to the video")
     args = parser.parse_args()
-    calculate_metrics(args.path)
+    df = calculate_metrics_all_timesteps(args.path)
+
+    print(df)
+    results = {
+        "metrics": df.to_dict(orient='records')
+    }
+    json_path = Path(args.path).parent / 'results.json'
+    with open(json_path, 'w') as f:
+        json.dump(results, f, indent=4)
+
